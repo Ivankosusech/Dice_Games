@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🎲 Игра в кости — Против бота</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #e8d8c4;
+      --surface: #f2e6d8;
+      --secondary: #d9c9b5;
+      --accent: #c0a88c;
+      --text-dark: #a88b6c;
+      --text-deep: #8b6f50;
+      --border: #c0a88c;
+      --shadow: rgba(139, 111, 80, 0.2);
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-dark);
+      font-family: 'Georgia', 'Times New Roman', serif;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 1.5rem;
+      border-radius: 16px;
+      background-color: var(--surface);
+      box-shadow: 0 10px 30px var(--shadow);
+      border: 2px solid var(--accent);
+    }
+
+    h1 {
+      color: var(--text-deep);
+      text-shadow: 0 2px 4px rgba(139, 111, 80, 0.3);
+      letter-spacing: 1px;
+      font-weight: bold;
+      font-style: italic;
+    }
+
+    .dice-display {
+      width: 64px;
+      height: 64px;
+      margin: 20px auto;
+      border: 2px solid #f2e6d8;
+      border-radius: 50%;
+      background-color: var(--surface);
+      box-shadow: 0 4px 10px rgba(242, 230, 216, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .dice-display img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    .dice-display::after {
+      content: attr(data-text);
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--text-deep);
+      display: block;
+    }
+
+    .dice-display.animate {
+      animation: pulse 0.8s ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .btn-success {
+      background-color: var(--text-deep);
+      border-color: var(--accent);
+      color: white;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+
+    .btn-success:hover {
+      background-color: #7a5f40;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(139, 111, 80, 0.4);
+    }
+
+    .btn-warning {
+      background-color: var(--accent);
+      border-color: #a88b6c;
+      color: white;
+      font-weight: bold;
+    }
+
+    .btn-warning:hover {
+      background-color: #b89a7c;
+      transform: translateY(-2px);
+    }
+
+    .btn-back {
+      background-color: #a88b6c;
+      color: white;
+      border: none;
+      font-weight: bold;
+      padding: 0.7rem 1.5rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 10px;
+    }
+
+    .btn-back:hover {
+      background-color: #8b6f50;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .dice-cell {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background-color: white;
+      margin: 4px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .dice-cell img {
+      width: 90%;
+      height: 90%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    .dice-cell:hover:not(.filled) {
+      background-color: #f8f2e8;
+      transform: scale(1.05);
+      border-color: var(--text-deep);
+    }
+
+    .dice-cell.filled {
+      background-color: var(--secondary);
+      border-color: var(--text-deep);
+      box-shadow: inset 0 0 0 2px var(--text-deep);
+      transform: scale(1.02);
+    }
+
+    .dice-cell.filled.animate {
+      animation: slideIn 0.4s forwards;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 16px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background-color: var(--surface);
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+
+    .player-info {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .player-info h4 {
+      color: var(--text-deep);
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .column-score {
+      font-size: 0.8rem;
+      color: var(--text-dark);
+      margin-top: -6px;
+      font-style: italic;
+    }
+
+    .current-player {
+      color: var(--text-deep);
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+
+    .remove-animation {
+      animation: remove 0.4s forwards;
+    }
+
+    @keyframes remove {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+      100% { opacity: 0; transform: scale(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container py-5">
+    <h1 class="text-center mb-4">🎲 Игра в кости — Против бота</h1>
+
+    <!-- Текущий ход -->
+    <div class="text-center mb-4">
+      <p class="current-player" id="current-player">Ход: Вы</p>
+      <div class="dice-display" id="dice" data-text="?"></div>
+      <button class="btn btn-success btn-lg mt-2" id="roll-btn">Бросить кубик</button>
+    </div>
+
+    <!-- Поля игроков -->
+    <div class="row justify-content-center gap-4">
+      <!-- Ваше поле -->
+      <div class="col-md-4">
+        <div class="player-info">
+          <h4>Вы</h4>
+          <p>Очки: <span id="score-1">0</span></p>
+        </div>
+        <div class="board" id="board-1">
+          <div class="dice-cell" data-player="1" data-col="0" data-row="0"></div>
+          <div class="dice-cell" data-player="1" data-col="1" data-row="0"></div>
+          <div class="dice-cell" data-player="1" data-col="2" data-row="0"></div>
+          <div class="dice-cell" data-player="1" data-col="0" data-row="1"></div>
+          <div class="dice-cell" data-player="1" data-col="1" data-row="1"></div>
+          <div class="dice-cell" data-player="1" data-col="2" data-row="1"></div>
+          <div class="dice-cell" data-player="1" data-col="0" data-row="2"></div>
+          <div class="dice-cell" data-player="1" data-col="1" data-row="2"></div>
+          <div class="dice-cell" data-player="1" data-col="2" data-row="2"></div>
+        </div>
+        <div class="text-center">
+          <small class="column-score" id="col-1-0"></small>
+          <small class="column-score" id="col-1-1"></small>
+          <small class="column-score" id="col-1-2"></small>
+        </div>
+      </div>
+
+      <!-- Поле бота -->
+      <div class="col-md-4">
+        <div class="player-info">
+          <h4>Бот</h4>
+          <p>Очки: <span id="score-2">0</span></p>
+        </div>
+        <div class="board" id="board-2">
+          <div class="dice-cell" data-player="2" data-col="0" data-row="0"></div>
+          <div class="dice-cell" data-player="2" data-col="1" data-row="0"></div>
+          <div class="dice-cell" data-player="2" data-col="2" data-row="0"></div>
+          <div class="dice-cell" data-player="2" data-col="0" data-row="1"></div>
+          <div class="dice-cell" data-player="2" data-col="1" data-row="1"></div>
+          <div class="dice-cell" data-player="2" data-col="2" data-row="1"></div>
+          <div class="dice-cell" data-player="2" data-col="0" data-row="2"></div>
+          <div class="dice-cell" data-player="2" data-col="1" data-row="2"></div>
+          <div class="dice-cell" data-player="2" data-col="2" data-row="2"></div>
+        </div>
+        <div class="text-center">
+          <small class="column-score" id="col-2-0"></small>
+          <small class="column-score" id="col-2-1"></small>
+          <small class="column-score" id="col-2-2"></small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Кнопки -->
+    <div class="text-center mt-4">
+      <button class="btn btn-warning btn-lg me-3" id="reset-btn">Начать заново</button>
+      <a href="index.html" class="btn-back">← Назад</a>
+    </div>
+  </div>
+
+  <script>
+    // Проверка изображений
+    function checkImages() {
+      const images = [1,2,3,4,5,6];
+      images.forEach(n => {
+        const img = new Image();
+        img.src = `img_${n}.png`;
+        img.onload = () => console.log(`✅ img_${n}.png загружен`);
+        img.onerror = () => console.error(`❌ Не найден файл: img_${n}.png`);
+      });
+    }
+    window.onload = checkImages;
+
+    // Остальной код...
+    let currentPlayer = 1;
+    let diceValue = null;
+    const rollButton = document.getElementById('roll-btn');
+    const diceElement = document.getElementById('dice');
+    const currentPlayerDisplay = document.getElementById('current-player');
+    const score1 = document.getElementById('score-1');
+    const score2 = document.getElementById('score-2');
+    const resetButton = document.getElementById('reset-btn');
+
+    function createDiceImage(value) {
+      const img = document.createElement('img');
+      img.src = `img_${value}.png`; // ← Имя файла должно совпадать!
+      img.alt = `Кубик ${value}`;
+      img.draggable = false;
+      return img;
+    }
+
+    // Бросок кубика игроком
+    rollButton.addEventListener('click', () => {
+      if (currentPlayer !== 1 || diceValue !== null) return;
+
+      diceValue = Math.floor(Math.random() * 6) + 1;
+      diceElement.innerHTML = '';
+      diceElement.removeAttribute('data-text');
+
+      const img = document.createElement('img');
+      img.src = `img_${diceValue}.png`;
+      img.alt = `Кубик ${diceValue}`;
+      diceElement.appendChild(img);
+      diceElement.classList.add('animate');
+      setTimeout(() => diceElement.classList.remove('animate'), 300);
+
+      rollButton.disabled = true;
+    });
+
+    // Обработка клика по своей ячейке
+    document.querySelectorAll('.dice-cell[data-player="1"]').forEach(cell => {
+      cell.addEventListener('click', () => {
+        if (currentPlayer !== 1 || diceValue === null) return;
+
+        placeDice(1, cell, diceValue);
+        diceValue = null;
+        diceElement.innerHTML = '?';
+        rollButton.disabled = false;
+
+        setTimeout(botTurn, 1000);
+      });
+    });
+
+    // Универсальная функция размещения кубика
+    function placeDice(player, cell, value) {
+      const col = parseInt(cell.dataset.col);
+      const columnCells = document.querySelectorAll(`.dice-cell[data-player="${player}"][data-col="${col}"]`);
+      const filledCount = Array.from(columnCells).filter(c => c.classList.contains('filled')).length;
+
+      if (filledCount >= 3) {
+        if (player === 1) alert('Этот столбец уже заполнен!');
+        return;
+      }
+
+      let targetCell = null;
+      for (let row = 2; row >= 0; row--) {
+        const c = document.querySelector(`.dice-cell[data-player="${player}"][data-col="${col}"][data-row="${row}"]`);
+        if (!c.classList.contains('filled')) {
+          targetCell = c;
+          break;
+        }
+      }
+
+      if (!targetCell) return;
+
+      targetCell.innerHTML = '';
+      targetCell.appendChild(createDiceImage(value));
+      targetCell.classList.add('filled', 'animate');
+      targetCell.style.backgroundColor = '#d9c9b5';
+
+      const opponent = player === 1 ? 2 : 1;
+      document.querySelectorAll(`.dice-cell[data-player="${opponent}"][data-col="${col}"]`).forEach(opCell => {
+        const img = opCell.querySelector('img');
+        if (img && img.src.includes(`img_${value}.png`)) {
+          opCell.classList.add('remove-animation');
+          setTimeout(() => {
+            opCell.innerHTML = '';
+            opCell.classList.remove('filled', 'remove-animation');
+            opCell.style.backgroundColor = '';
+          }, 400);
+        }
+      });
+    }
+
+    // Ход бота
+    function botTurn() {
+      currentPlayer = 2;
+      currentPlayerDisplay.textContent = 'Ход: Бот';
+
+      const botDice = Math.floor(Math.random() * 6) + 1;
+      diceElement.innerHTML = '';
+      diceElement.appendChild(createDiceImage(botDice));
+      diceElement.classList.add('animate');
+      setTimeout(() => diceElement.classList.remove('animate'), 300);
+
+      setTimeout(() => {
+        const cols = [0,1,2].sort(() => 0.5 - Math.random());
+        let placed = false;
+
+        for (let col of cols) {
+          const columnCells = document.querySelectorAll(`.dice-cell[data-player="2"][data-col="${col}"]`);
+          const filledCount = Array.from(columnCells).filter(c => c.classList.contains('filled')).length;
+          if (filledCount < 3) {
+            const cell = Array.from(columnCells).find(c => !c.classList.contains('filled'));
+            if (cell) {
+              placeDice(2, cell, botDice);
+              placed = true;
+              break;
+            }
+          }
+        }
+
+        currentPlayer = 1;
+        currentPlayerDisplay.textContent = 'Ход: Вы';
+        updateScore();
+
+        if (isGameOver()) {
+          setTimeout(() => {
+            const s1 = parseInt(score1.textContent);
+            const s2 = parseInt(score2.textContent);
+            let result = `Игра окончена!\nВы: ${s1}\nБот: ${s2}\n`;
+            if (s1 > s2) result += "Вы победили!";
+            else if (s2 > s1) result += "Бот победил!";
+            else result += "Ничья!";
+            alert(result);
+          }, 100);
+        }
+      }, 1000);
+    }
+
+    // Подсчёт очков
+    function updateScore() {
+      let total1 = 0, total2 = 0;
+
+      for (let col = 0; col < 3; col++) {
+        const cells1 = Array.from(document.querySelectorAll(`.dice-cell[data-player="1"][data-col="${col}"]`))
+          .map(c => {
+            const img = c.querySelector('img');
+            if (img) {
+              const match = img.src.match(/img_(\d)\.png/);
+              return match ? parseInt(match[1]) : 0;
+            }
+            return 0;
+          }).filter(v => v > 0);
+
+        const score1Col = calculateColumnScore(cells1);
+        total1 += score1Col;
+        document.getElementById(`col-1-${col}`).textContent = `(${score1Col})`;
+
+        const cells2 = Array.from(document.querySelectorAll(`.dice-cell[data-player="2"][data-col="${col}"]`))
+          .map(c => {
+            const img = c.querySelector('img');
+            if (img) {
+              const match = img.src.match(/img_(\d)\.png/);
+              return match ? parseInt(match[1]) : 0;
+            }
+            return 0;
+          }).filter(v => v > 0);
+
+        const score2Col = calculateColumnScore(cells2);
+        total2 += score2Col;
+        document.getElementById(`col-2-${col}`).textContent = `(${score2Col})`;
+      }
+
+      score1.textContent = total1;
+      score2.textContent = total2;
+    }
+
+    function calculateColumnScore(values) {
+      if (values.length === 0) return 0;
+      const counts = {};
+      values.forEach(v => counts[v] = (counts[v] || 0) + 1);
+      let total = 0;
+      for (const numStr in counts) {
+        const num = parseInt(numStr);
+        const count = counts[num];
+        const sum = num * count;
+        if (count === 2) total += sum * 2;
+        else if (count === 3) total += sum * 3;
+        else total += sum;
+      }
+      return total;
+    }
+
+    function isBoardFull(player) {
+      for (let col = 0; col < 3; col++) {
+        const cells = document.querySelectorAll(`.dice-cell[data-player="${player}"][data-col="${col}"].filled`);
+        if (cells.length < 3) return false;
+      }
+      return true;
+    }
+
+    function isGameOver() {
+      return isBoardFull(1) || isBoardFull(2);
+    }
+
+    // Сброс игры
+    resetButton.addEventListener('click', () => {
+      document.querySelectorAll('.dice-cell').forEach(cell => {
+        cell.innerHTML = '';
+        cell.classList.remove('filled', 'animate', 'remove-animation');
+        cell.style.backgroundColor = '';
+      });
+      document.querySelectorAll('.column-score').forEach(el => el.textContent = '');
+
+      diceElement.innerHTML = '?';
+      currentPlayer = 1;
+      currentPlayerDisplay.textContent = 'Ход: Вы';
+      rollButton.disabled = false;
+      diceValue = null;
+      score1.textContent = '0';
+      score2.textContent = '0';
+    });
+  </script>
+</body>
+</html>
