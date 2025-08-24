@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🎲 Игра в кости — 2 игрока (онлайн)</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #e8d8c4;
+      --surface: #f2e6d8;
+      --secondary: #d9c9b5;
+      --accent: #c0a88c;
+      --text-dark: #a88b6c;
+      --text-deep: #8b6f50;
+      --border: #c0a88c;
+      --shadow: rgba(139, 111, 80, 0.2);
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-dark);
+      font-family: 'Georgia', 'Times New Roman', serif;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 1.5rem;
+      border-radius: 16px;
+      background-color: var(--surface);
+      box-shadow: 0 10px 30px var(--shadow);
+      border: 2px solid var(--accent);
+    }
+
+    h1, h4 {
+      color: var(--text-deep);
+    }
+
+    .dice-display {
+      width: 64px;
+      height: 64px;
+      margin: 20px auto;
+      border: 2px solid #f2e6d8;
+      border-radius: 50%;
+      background-color: var(--surface);
+      box-shadow: 0 4px 10px rgba(242, 230, 216, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dice-display img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .dice-cell {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background-color: white;
+      margin: 4px;
+      cursor: pointer;
+    }
+
+    .dice-cell.filled {
+      background-color: var(--secondary);
+      border-color: var(--text-deep);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 16px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background-color: var(--surface);
+    }
+
+    .btn-success {
+      background-color: var(--text-deep);
+      color: white;
+      border: none;
+    }
+
+    .your-turn {
+      border: 3px solid green;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container py-5">
+    <h1 class="text-center">🎲 Игра в кости — Онлайн 2 игрока</h1>
+    <p class="text-center">Ссылка: <code id="link"></code></p>
+
+    <div class="text-center mb-4">
+      <p><strong id="status">Загрузка...</strong></p>
+      <div class="dice-display" id="dice">?</div>
+      <button class="btn btn-success mt-2" id="roll-btn" disabled>Бросить кубик</button>
+    </div>
+
+    <div class="row justify-content-center gap-4">
+      <!-- Игрок 1 -->
+      <div class="col-md-4">
+        <div class="player-info">
+          <h4>Вы</h4>
+          <p>Очки: <span id="score-1">0</span></p>
+        </div>
+        <div class="board" id="board-1"></div>
+        <div class="text-center">
+          <small class="column-score" id="col-1-0"></small>
+          <small class="column-score" id="col-1-1"></small>
+          <small class="column-score" id="col-1-2"></small>
+        </div>
+      </div>
+
+      <!-- Игрок 2 -->
+      <div class="col-md-4">
+        <div class="player-info">
+          <h4>Противник</h4>
+          <p>Очки: <span id="score-2">0</span></p>
+        </div>
+        <div class="board" id="board-2"></div>
+        <div class="text-center">
+          <small class="column-score" id="col-2-0"></small>
+          <small class="column-score" id="col-2-1"></small>
+          <small class="column-score" id="col-2-2"></small>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-4">
+      <button class="btn btn-warning" onclick="location.reload()">Начать заново</button>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script>
+    // ⚙️ ЗАМЕНИ НА СВОЙ КОНФИГ ИЗ Firebase Console
+    const firebaseConfig = {
+      apiKey: "ваш-api-key",
+      authDomain: "ваш-проект.firebaseapp.com",
+      databaseURL: "https://ваш-проект-default-rtdb.firebaseio.com",
+      projectId: "ваш-проект",
+      storageBucket: "ваш-проект.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abcdef12345"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const gameId = new URLSearchParams(window.location.search).get('game') || generateGameId();
+    const gameRef = db.ref('games/' + gameId);
+
+    function generateGameId() {
+      return Math.random().toString(36).substr(2, 6).toUpperCase();
+    }
+
+    // Обновить ссылку
+    document.getElementById('link').textContent = `?game=${gameId}`;
+
+    // Инициализация поля
+    const board1 = document.getElementById('board-1');
+    const board2 = document.getElementById('board-2');
+    for (let i = 0; i < 9; i++) {
+      const cell1 = document.createElement('div');
+      cell1.className = 'dice-cell';
+      cell1.dataset.col = i % 3;
+      cell1.dataset.row = Math.floor(i / 3);
+      board1.appendChild(cell1);
+
+      const cell2 = document.createElement('div');
+      cell2.className = 'dice-cell';
+      cell2.dataset.col = i % 3;
+      cell2.dataset.row = Math.floor(i / 3);
+      board2.appendChild(cell2);
+    }
+
+    let playerId = null;
+    let gameState = {
+      player1: null,
+      player2: null,
+      currentPlayer: 1,
+      dice: null,
+      board1: Array(9).fill(null),
+      board2: Array(9).fill(null)
+    };
+
+    gameRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        gameState = data;
+      } else {
+        gameRef.set(gameState);
+      }
+
+      updateUI();
+    });
+
+    function updateUI() {
+      const isPlayer1 = playerId === 1;
+      const isPlayer2 = playerId === 2;
+
+      document.getElementById('status').textContent = 
+        gameState.currentPlayer === 1 ? 'Ход: Игрок 1' : 'Ход: Игрок 2';
+
+      const myBoard = isPlayer1 ? 'board-1' : 'board-2';
+      const canPlay = (isPlayer1 && gameState.currentPlayer === 1) || 
+                      (isPlayer2 && gameState.currentPlayer === 2);
+
+      document.getElementById('roll-btn').disabled = !canPlay || gameState.dice !== null;
+
+      // Показ кубика
+      const diceEl = document.getElementById('dice');
+      diceEl.innerHTML = '';
+      if (gameState.dice) {
+        const img = document.createElement('img');
+        img.src = `img_${gameState.dice}.png`;
+        diceEl.appendChild(img);
+      } else {
+        diceEl.textContent = '?';
+      }
+
+      // Обновить доски
+      updateBoard('board-1', gameState.board1);
+      updateBoard('board-2', gameState.board2);
+
+      // Обновить очки
+      updateScores();
+    }
+
+    function updateBoard(boardId, board) {
+      const cells = document.querySelectorAll(`#${boardId} .dice-cell`);
+      cells.forEach((cell, i) => {
+        cell.innerHTML = '';
+        if (board[i]) {
+          const img = document.createElement('img');
+          img.src = `img_${board[i]}.png`;
+          img.style.width = '90%';
+          cell.appendChild(img);
+          cell.classList.add('filled');
+        } else {
+          cell.classList.remove('filled');
+        }
+      });
+    }
+
+    function updateScores() {
+      // (ваша логика подсчёта очков)
+    }
+
+    // Присоединение
+    gameRef.once('value', (snapshot) => {
+      const data = snapshot.val();
+      if (!data?.player1) {
+        playerId = 1;
+        gameRef.child('player1').set(true);
+      } else if (!data?.player2) {
+        playerId = 2;
+        gameRef.child('player2').set(true);
+      }
+    });
+
+    // Бросок
+    document.getElementById('roll-btn').addEventListener('click', () => {
+      const value = Math.floor(Math.random() * 6) + 1;
+      gameRef.child('dice').set(value);
+    });
+
+    // Клик по ячейке
+    document.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('dice-cell')) return;
+      const board = e.target.closest('.board').id;
+      const col = e.target.dataset.col;
+      const row = e.target.dataset.row;
+
+      // (логика размещения — нужно доработать)
+    });
+  </script>
+</body>
+</html>

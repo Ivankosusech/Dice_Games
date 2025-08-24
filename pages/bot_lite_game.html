@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🎲 Игра в кости — Против бота</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="../style/style.css" rel="stylesheet" />
+  <script>
+    // Авто-масштаб под экран
+    function setViewport() {
+      const scale = 1 / window.devicePixelRatio;
+      const viewport = document.querySelector('meta[name="viewport"]');
+      viewport.setAttribute(
+        'content',
+        `width=device-width, initial-scale=${scale}, maximum-scale=3.0, user-scalable=yes`
+      );
+    }
+    window.addEventListener('load', setViewport);
+    window.addEventListener('resize', setViewport);
+  </script>
+</head>
+<body>
+
+  <div class="container py-5">
+    <h1 class="text-center mb-4">🎲 Игра в кости — Против бота</h1>
+
+    <!-- Текущий ход -->
+    <div class="text-center mb-4">
+      <p class="current-player" id="current-player">Ход: Вы</p>
+      <div class="dice-display" id="dice" data-text="?"></div>
+    </div>
+
+    <!-- Поля игроков -->
+    <div class="row justify-content-center gap-4">
+      <!-- Ваше поле -->
+      <div class="col-md-4">
+        <div class="player-info">
+          <h4>Вы</h4>
+          <p>Очки: <span id="score-1">0</span></p>
+        </div>
+        <div class="board" id="board-1">
+          <div class="dice-cell" data-player="1" data-col="0" data-row="0"></div>
+          <div class="dice-cell" data-player="1" data-col="1" data-row="0"></div>
+          <div class="dice-cell" data-player="1" data-col="2" data-row="0"></div>
+          <div class="dice-cell" data-player="1" data-col="0" data-row="1"></div>
+          <div class="dice-cell" data-player="1" data-col="1" data-row="1"></div>
+          <div class="dice-cell" data-player="1" data-col="2" data-row="1"></div>
+          <div class="dice-cell" data-player="1" data-col="0" data-row="2"></div>
+          <div class="dice-cell" data-player="1" data-col="1" data-row="2"></div>
+          <div class="dice-cell" data-player="1" data-col="2" data-row="2"></div>
+        </div>
+        <div class="text-center">
+          <small class="column-score" id="col-1-0"></small>
+          <small class="column-score" id="col-1-1"></small>
+          <small class="column-score" id="col-1-2"></small>
+        </div>
+      </div>
+
+      <!-- Поле бота -->
+      <div class="col-md-4">
+        <div class="player-info">
+          <h4>Бот</h4>
+          <p>Очки: <span id="score-2">0</span></p>
+        </div>
+        <div class="board" id="board-2">
+          <div class="dice-cell" data-player="2" data-col="0" data-row="0"></div>
+          <div class="dice-cell" data-player="2" data-col="1" data-row="0"></div>
+          <div class="dice-cell" data-player="2" data-col="2" data-row="0"></div>
+          <div class="dice-cell" data-player="2" data-col="0" data-row="1"></div>
+          <div class="dice-cell" data-player="2" data-col="1" data-row="1"></div>
+          <div class="dice-cell" data-player="2" data-col="2" data-row="1"></div>
+          <div class="dice-cell" data-player="2" data-col="0" data-row="2"></div>
+          <div class="dice-cell" data-player="2" data-col="1" data-row="2"></div>
+          <div class="dice-cell" data-player="2" data-col="2" data-row="2"></div>
+        </div>
+        <div class="text-center">
+          <small class="column-score" id="col-2-0"></small>
+          <small class="column-score" id="col-2-1"></small>
+          <small class="column-score" id="col-2-2"></small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Кнопки -->
+    <div class="text-center mt-4">
+      <button class="btn btn-warning btn-lg me-3" id="reset-btn">Начать заново</button>
+      <a href="../index.html" class="btn-back">← Назад</a>
+    </div>
+  </div>
+
+  <!-- Модальное окно победы -->
+  <div class="modal-overlay" id="winner-modal">
+    <div class="modal">
+      <h2>🎉 Игра окончена!</h2>
+      <p>Вы: <span id="final-score-1">0</span></p>
+      <p>Бот: <span id="final-score-2">0</span></p>
+      <div class="winner" id="winner-text">Ничья!</div>
+      <button class="btn-restart" onclick="restartGame()">Начать заново</button>
+    </div>
+  </div>
+  
+
+  <!-- Подключение внешнего скрипта -->
+  <script src="../script/bot_lite_game.js"></script>
+</body>
+</html>
